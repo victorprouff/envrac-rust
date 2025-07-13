@@ -1,4 +1,5 @@
 use serde::{Deserialize, Serialize};
+use std::env;
 
 // Structure pour représenter une tâche Todoist
 #[derive(Debug, Serialize, Deserialize)]
@@ -41,10 +42,13 @@ async fn get_tasks(api_token: &str, project_id: &str) -> Result<Vec<Task>, Box<d
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let api_token = "";
-    let project_id = "";
 
-    match get_tasks(api_token, project_id).await {
+    let api_token = env::var("TODOIST_API_TOKEN")
+        .expect("La variable d'environnement TODOIST_API_TOKEN n'est pas définie");
+
+    let project_id = "2332182173";
+
+    match get_tasks(&api_token, project_id).await {
         Ok(tasks) => {
             for task in tasks {
                 println!("Tâche: {}", task.content);
