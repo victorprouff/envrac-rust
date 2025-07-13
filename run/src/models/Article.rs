@@ -5,7 +5,7 @@ use crate::models::{convert_to_category, Category};
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Article {
-    section: i64,
+    section_id: String,
     pub content: String,
     pub description: String,
     #[serde(skip_deserializing)]  // On ignore ce champ pendant la désérialisation
@@ -16,7 +16,7 @@ pub struct Article {
 impl Default for Article {
     fn default() -> Self {
         Article {
-            section: 0,
+            section_id: String::new(),
             content: String::new(),
             description: String::new(),
             category: None,
@@ -27,6 +27,6 @@ impl Default for Article {
 impl Article {
     // Cette méthode sera appelée après la désérialisation
     pub fn post_deserialize(&mut self) {
-        self.category = Some(convert_to_category(&self.section));
+        self.category = Some(convert_to_category(&self.section_id));
     }
 }

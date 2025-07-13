@@ -1,10 +1,10 @@
-use serde::{Deserialize, Serialize};
 
 // Déclare le module models
 pub mod models;
 // Re-exporte Article pour un accès plus facile
 pub use models::Article;
 
+/*
 pub fn execute(data: &str) -> Result<(), serde_json::Error> {
     // Désérialiser le JSON en Vec<Article>
     let mut articles: Vec<Article> = serde_json::from_str(data)?;
@@ -23,4 +23,4 @@ pub fn execute(data: &str) -> Result<(), serde_json::Error> {
     }
 
     Ok(())
-}
+}*/

@@ -1,16 +1,7 @@
-use serde::{Deserialize, Serialize};
+use run::Article;
 use std::env;
 
-// Structure pour représenter une tâche Todoist
-#[derive(Debug, Serialize, Deserialize)]
-struct Task {
-    id: String,
-    content: String,
-    project_id: String,
-    is_completed: bool,
-}
-
-async fn get_tasks(api_token: &str, project_id: &str) -> Result<Vec<Task>, Box<dyn std::error::Error>> {
+async fn get_articles(api_token: &str, project_id: &str) -> Result<Vec<Article>, Box<dyn std::error::Error>> {
 
     let url = format!(
         "https://api.todoist.com/rest/v2/tasks?project_id={}",
@@ -34,10 +25,9 @@ async fn get_tasks(api_token: &str, project_id: &str) -> Result<Vec<Task>, Box<d
     }
 
     // Lire le corps de la réponse
-    let tasks: Vec<Task> = response.json().await?;
-    println!("{:?}", tasks);
+    let articles: Vec<Article> = response.json().await?;
 
-    Ok(tasks)
+    Ok(articles)
 }
 
 #[tokio::main]
@@ -48,10 +38,17 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let project_id = "2332182173";
 
-    match get_tasks(&api_token, project_id).await {
-        Ok(tasks) => {
-            for task in tasks {
-                println!("Tâche: {}", task.content);
+    match get_articles(&api_token, project_id).await {
+        Ok(mut articles) => {
+            for article in &mut articles {
+                article.post_deserialize();
+            }
+
+            for article in articles {
+                println!("Article : {}, {} - Catégorie: {:?}",
+                         article.content,
+                         article.description,
+                         article.category.unwrap().to_string());
             }
         }
         Err(e) => eprintln!("Erreur: {}", e),

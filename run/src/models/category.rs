@@ -1,4 +1,5 @@
 use serde::{Deserialize, Serialize};
+use std::fmt;
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub enum Category {
@@ -23,13 +24,19 @@ impl Category {
     }
 }
 
-pub fn convert_to_category(section: &i64) -> Category {
+impl fmt::Display for Category {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{:?}", self.to_string())
+    }
+}
+
+pub fn convert_to_category(section: &str) -> Category {
     match section {
-        181074705 => Category::Youtube,
-        179438112 => Category::Articles,
-        181074629 => Category::Tools,
-        184011119 => Category::Podcast,
-        184719314 => Category::Livre,
+        "181074705" => Category::Youtube,
+        "179438112" => Category::Articles,
+        "181074629" => Category::Tools,
+        "184011119" => Category::Podcast,
+        "184719314" => Category::Livre,
         _ => Category::PutAside
     }
 }
