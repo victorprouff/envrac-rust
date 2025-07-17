@@ -2,6 +2,10 @@ use run::Article;
 use run::models::Category;
 use std::collections::HashMap;
 use std::env;
+use chrono::{Local, Datelike};
+
+const MOIS: [&str; 12] = ["Janvier", "Février", "Mars", "Avril", "Mai", "Juin",
+    "Juillet", "Août", "Septembre", "Octobre", "Novembre", "Décembre"];
 
 async fn get_articles(
     api_token: &str,
@@ -49,6 +53,12 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
             let grouped_articles = group_by_category(filtered_articles);
 
+            let now = Local::now();
+            let day_letter = format!("{} {}",
+                                     now.format("%d").to_string(),
+                                     MOIS[now.month0() as usize]
+            );
+
             let mut content_blog = format!("---
 title: \"[En Vrac] - {dayLetter}\"
 description: \"En vrac du {dayLetter}. Mes découvertes, articles, vidéos et écoute qui m'ont intéressé et que je veux partager.\"
@@ -65,15 +75,14 @@ Comme chaque semaine, vous pouvez retrouver ici des liens d’articles de vidéo
 Les deux derniers EnVrac :
   - [[En Vrac] - {lastArticle1date}](https://blog.victorprouff.fr/en-vracs/${lastArticle1name}/)
   - [[En Vrac] - {lastArticle2date}](https://blog.victorprouff.fr/en-vracs/${lastArticle2name}/)",
-       dayLetter = "dayLetter",
-        year = "year",
-        month = "month",
-        day = "day",
+        dayLetter = day_letter,
+        year = now.year(),
+        month = now.format("%m").to_string(),
+        day = now.format("%d").to_string(),
         lastArticle1date = "lastArticle1date",
         lastArticle1name = "lastArticle1name",
         lastArticle2date = "lastArticle2date",
         lastArticle2name = "lastArticle2name");
-
 
             // Afficher les articles groupés par catégorie
             for (category, articles) in grouped_articles.iter() {
