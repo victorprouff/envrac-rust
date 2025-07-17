@@ -1,6 +1,6 @@
-use std::collections::HashMap;
 use run::Article;
 use run::models::Category;
+use std::collections::HashMap;
 use std::env;
 
 async fn get_articles(
@@ -45,21 +45,55 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     match get_articles(&api_token, project_id).await {
         Ok(articles) => {
-
             let filtered_articles: Vec<Article> = exclude_put_aside_category_articles(articles);
-            
+
             let grouped_articles = group_by_category(filtered_articles);
+
+            let mut content_blog = format!("---
+title: \"[En Vrac] - {dayLetter}\"
+description: \"En vrac du {dayLetter}. Mes découvertes, articles, vidéos et écoute qui m'ont intéressé et que je veux partager.\"
+summary: \"En vrac du {dayLetter}. Mes découvertes, articles, vidéos et écoute qui m'ont intéressé et que je veux partager.\"
+date: {year}-{month}-{day}T05:00:03+01:00
+categories: [ \"En vrac\" ]
+draft: false
+---
+
+Hello ! 😊
+
+Comme chaque semaine, vous pouvez retrouver ici des liens d’articles de vidéos ou de podcast que j’ai découvert au fil de ma veille quotidienne et que j’aimerais partager avec vous. 😀
+
+Les deux derniers EnVrac :
+  - [[En Vrac] - {lastArticle1date}](https://blog.victorprouff.fr/en-vracs/${lastArticle1name}/)
+  - [[En Vrac] - {lastArticle2date}](https://blog.victorprouff.fr/en-vracs/${lastArticle2name}/)",
+       dayLetter = "dayLetter",
+        year = "year",
+        month = "month",
+        day = "day",
+        lastArticle1date = "lastArticle1date",
+        lastArticle1name = "lastArticle1name",
+        lastArticle2date = "lastArticle2date",
+        lastArticle2name = "lastArticle2name");
+
 
             // Afficher les articles groupés par catégorie
             for (category, articles) in grouped_articles.iter() {
-                println!("\n{}\n{}", category.to_string(), "=".repeat(30));
+                content_blog.push_str(&format!("\n\n## {}\n", category.to_string()));
                 for article in articles {
-                    println!("- {}\n  {}\n", article.content, article.description);
+                    content_blog.push_str(&format!("- {}", article.content));
+                    if !article.description.is_empty() {
+                        content_blog.push_str(&format!(" - {}\n", article.description));
+                    }
+                    else {
+                        content_blog.push_str(&"\n".to_string());
+                    }
                 }
             }
+
+            println!("{}",content_blog);
         }
         Err(e) => eprintln!("Erreur: {}", e),
     }
+
 
     Ok(())
 }
@@ -83,8 +117,6 @@ fn group_by_category(filtered_articles: Vec<Article>) -> HashMap<Category, Vec<A
 fn exclude_put_aside_category_articles(articles: Vec<Article>) -> Vec<Article> {
     articles
         .into_iter()
-        .filter(|article| {
-            !matches!(article.category, Some(Category::PutAside))
-        })
+        .filter(|article| !matches!(article.category, Some(Category::PutAside)))
         .collect()
 }
