@@ -2,8 +2,7 @@ use serde::{Deserialize, Serialize};
 use std::fmt;
 use std::hash::{Hash, Hasher};
 
-#[derive(Debug, Serialize, Deserialize, Clone, PartialEq
-)]
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
 pub enum Category {
     Youtube,
     Articles,

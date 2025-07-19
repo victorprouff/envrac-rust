@@ -1,12 +1,12 @@
 use run::Task;
-use run::models::Category;
+use run::models::{Author, Category, Committer, GithubRequest};
 use std::collections::HashMap;
-use std::{env, fmt};
+use std::{env};
 use base64::Engine;
 use base64::engine::general_purpose;
 use chrono::{Local, Datelike, DateTime, NaiveDate};
 use reqwest::header::USER_AGENT;
-use serde::{Deserialize, Serialize};
+use serde::Deserialize;
 
 const MOIS: [&str; 12] = ["Janvier", "Février", "Mars", "Avril", "Mai", "Juin",
     "Juillet", "Août", "Septembre", "Octobre", "Novembre", "Décembre"];
@@ -87,47 +87,6 @@ async fn get_last_articles_blog(api_token: &str, user_agent: &str) -> Result<Vec
     Ok(content)
 }
 
-#[derive(Debug, Serialize)]
-struct GithubRequest {
-    message: String,
-    committer: Committer,
-    author: Author,
-    content: String,
-    branch: String
-}
-
-#[derive(Debug, Serialize)]
-struct Author {
-    name: String,
-    email: String,
-}
-
-#[derive(Debug, Serialize)]
-struct Committer {
-    name: String,
-    email: String,
-}
-impl fmt::Display for GithubRequest {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "GithubRequest {{ message: {}, committer: {}, content: {} }}",
-               self.message, self.committer, self.content)
-    }
-}
-
-impl fmt::Display for Committer {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "Committer {{ name: {}, email: {} }}",
-               self.name, self.email)
-    }
-}
-
-impl fmt::Display for Author {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "Committer {{ name: {}, email: {} }}",
-               self.name, self.email)
-    }
-}
-
 async fn push_new_article_blog(api_token: &str, user_agent: &str, content: &str, commit_message: &str) -> Result<bool, Box<dyn std::error::Error>> {
     let file_name = format!("{}.md", Local::now().format("%Y-%m-%d-EnVrac"));
     let base_url = "https://api.github.com/repos/victorprouff/blog-hugo/contents/content/en-vracs";
@@ -197,10 +156,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let head_of_article = create_head_of_article(last_articles_blog);
     let body_of_article = create_body_of_article(grouped_tasks);
-
-    println!("{}\n{}", head_of_article, body_of_article);
-
-    let commit_message = format!("[En Vrac] - Publish AUto {}", Local::now().format("%Y-%m-%d-envrac.md"));
+    
+    let commit_message = format!("[EnVrac] - Publish Auto {}", Local::now().format("%Y-%m-%d-envrac.md"));
     push_new_article_blog(&github_api_token, &github_user_agent, &format!("{}\n{}", head_of_article, body_of_article), &*commit_message).await?;
 
     Ok(())
