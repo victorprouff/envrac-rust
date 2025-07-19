@@ -2,7 +2,7 @@
 // Déclare le module models
 pub mod models;
 // Re-exporte Article pour un accès plus facile
-pub use models::Article;
+pub use models::Task;
 
 /*
 pub fn execute(data: &str) -> Result<(), serde_json::Error> {

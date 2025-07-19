@@ -4,7 +4,7 @@ use crate::models::{convert_to_category, Category};
 // On importe la fonction depuis la racine
 
 #[derive(Debug, Serialize, Deserialize)]
-pub struct Article {
+pub struct Task {
     section_id: String,
     pub content: String,
     pub description: String,
@@ -13,9 +13,9 @@ pub struct Article {
     pub category: Option<Category>
 }
 
-impl Default for Article {
+impl Default for Task {
     fn default() -> Self {
-        Article {
+        Task {
             section_id: String::new(),
             content: String::new(),
             description: String::new(),
@@ -24,7 +24,7 @@ impl Default for Article {
     }
 }
 
-impl Article {
+impl Task {
     // Cette méthode sera appelée après la désérialisation
     pub fn post_deserialize(&mut self) {
         self.category = Some(convert_to_category(&self.section_id));
