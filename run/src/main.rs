@@ -1,10 +1,12 @@
 use run::Task;
 use run::models::Category;
 use std::collections::HashMap;
-use std::env;
+use std::{env, fmt};
+use base64::Engine;
+use base64::engine::general_purpose;
 use chrono::{Local, Datelike, DateTime, NaiveDate};
 use reqwest::header::USER_AGENT;
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 
 const MOIS: [&str; 12] = ["Janvier", "Février", "Mars", "Avril", "Mai", "Juin",
     "Juillet", "Août", "Septembre", "Octobre", "Novembre", "Décembre"];
@@ -85,6 +87,96 @@ async fn get_last_articles_blog(api_token: &str, user_agent: &str) -> Result<Vec
     Ok(content)
 }
 
+#[derive(Debug, Serialize)]
+struct GithubRequest {
+    message: String,
+    committer: Committer,
+    author: Author,
+    content: String,
+    branch: String
+}
+
+#[derive(Debug, Serialize)]
+struct Author {
+    name: String,
+    email: String,
+}
+
+#[derive(Debug, Serialize)]
+struct Committer {
+    name: String,
+    email: String,
+}
+impl fmt::Display for GithubRequest {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "GithubRequest {{ message: {}, committer: {}, content: {} }}",
+               self.message, self.committer, self.content)
+    }
+}
+
+impl fmt::Display for Committer {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "Committer {{ name: {}, email: {} }}",
+               self.name, self.email)
+    }
+}
+
+impl fmt::Display for Author {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "Committer {{ name: {}, email: {} }}",
+               self.name, self.email)
+    }
+}
+
+async fn push_new_article_blog(api_token: &str, user_agent: &str, content: &str, commit_message: &str) -> Result<bool, Box<dyn std::error::Error>> {
+    let file_name = format!("{}.md", Local::now().format("%Y-%m-%d-EnVrac"));
+    let base_url = "https://api.github.com/repos/victorprouff/blog-hugo/contents/content/en-vracs";
+    let file_url = format!("{}/{}", base_url, file_name);
+
+    let encoded_content = general_purpose::STANDARD.encode(content);
+
+    let body = GithubRequest {
+        message: commit_message.to_string(),
+        committer: Committer {
+            name: "Victor Prouff".to_string(),
+            email: "victorprouff@outlook.fr".to_string(),
+        },
+        author: Author {
+            name: "Victor Prouff".to_string(),
+            email: "victorprouff@outlook.fr".to_string(),
+        },
+        content: encoded_content,
+        branch: "main".to_string()
+    };
+
+    let client = reqwest::Client::new();
+    let response = client
+        .put(file_url)
+        .header("Accept", "application/vnd.github+json")
+        .header("Authorization", format!("Bearer {}", api_token))
+        .header(USER_AGENT, user_agent) // gh api requires a user-agent header
+        .header("X-GitHub-Api-Version", "2022-11-28")
+        .json(&body)
+        .send()
+        .await?;
+
+    // Vérifier le status de la réponse
+    if response.status().is_success() {
+        println!("Success : {:?}", response.status());
+        return Ok(true);
+    }
+
+    if response.status().is_client_error() {
+        let status = response.status();
+        println!("Erreur détaillée : {}", response.text().await?);
+        return Err(format!("Erreur client: {}", status).into());
+    }
+
+    let status = response.status();
+    println!("Erreur détaillée : {}", response.text().await?);
+    Err(format!("Erreur serveur: {}", status).into())
+}
+
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let todois_api_token = env::var("TODOIST_API_TOKEN")
@@ -106,25 +198,34 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let head_of_article = create_head_of_article(last_articles_blog);
     let body_of_article = create_body_of_article(grouped_tasks);
 
-    println!("{} \n {}", head_of_article, body_of_article);
+    println!("{}\n{}", head_of_article, body_of_article);
 
-
+    let commit_message = format!("[En Vrac] - Publish AUto {}", Local::now().format("%Y-%m-%d-envrac.md"));
+    push_new_article_blog(&github_api_token, &github_user_agent, &format!("{}\n{}", head_of_article, body_of_article), &*commit_message).await?;
 
     Ok(())
 }
 
 fn create_body_of_article(grouped_tasks: HashMap<Category, Vec<Task>>) -> String {
-    let mut body = String::new();
+    let mut body = String::with_capacity(1024); // Pré-alloue de l'espace pour optimiser
 
-    // Afficher les articles groupés par catégorie
-    for (category, articles) in grouped_tasks.iter() {
-        body.push_str(&format!("\n\n## {}\n", category.to_string()));
+    for (category, articles) in grouped_tasks.into_iter() {
+        // Ajout d'un saut de ligne et de la catégorie
+        body.push_str("\n\n## ");
+        body.push_str(&category.to_string());
+        body.push_str("\n");
+
+        // Traitement de chaque article
         for article in articles {
-            body.push_str(&format!("- {}", article.content));
+            body.push_str("- ");
+            body.push_str(&article.content);
+
             if !article.description.is_empty() {
-                body.push_str(&format!(" - {}\n", article.description));
+                body.push_str(" - ");
+                body.push_str(&article.description);
+                body.push_str("\n");
             } else {
-                body.push_str(&"\n".to_string());
+                body.push_str("\n");
             }
         }
     }
