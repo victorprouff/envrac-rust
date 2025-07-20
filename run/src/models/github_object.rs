@@ -1,7 +1,5 @@
+use serde::Serialize;
 use std::fmt;
-use reqwest::header::USER_AGENT;
-use serde::{Deserialize, Serialize};
-
 
 #[derive(Debug, Serialize)]
 pub struct GithubRequest {
