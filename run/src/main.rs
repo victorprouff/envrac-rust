@@ -144,6 +144,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .expect("La variable d'environnement GITHUB_API_TOKEN n'est pas définie");
     let github_user_agent = env::var("GITHUB_USER_AGENT")
         .expect("La variable d'environnement GITHUB_API_TOKEN n'est pas définie");
+    let executor = env::var("EXECUTOR")
+        .expect("La variable d'environnement EXECUTOR n'est pas définie");
     let project_id = "2332182173";
 
     let last_articles_blog = get_last_articles_blog(&github_api_token, &github_user_agent).await?;
@@ -157,7 +159,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let head_of_article = create_head_of_article(last_articles_blog);
     let body_of_article = create_body_of_article(grouped_tasks);
 
-    let commit_message = format!("[EnVrac] - Publish Auto (envrac-rust) {}", Local::now().format("%Y-%m-%d-envrac.md"));
+    let commit_message = format!("[EnVrac] - Publish Auto (envrac-rust - {}) {}", executor, Local::now().format("%Y-%m-%d-envrac.md"));
     push_new_article_blog(&github_api_token, &github_user_agent, &format!("{}\n{}", head_of_article, body_of_article), &*commit_message).await?;
 
     Ok(())
