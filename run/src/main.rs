@@ -92,7 +92,7 @@ async fn push_new_article_blog(api_token: &str, user_agent: &str, content: &str,
     println!("Pushing new article to blog...");
 
     let file_name = format!("{}.md", Local::now().format("%Y-%m-%d-EnVrac"));
-    let base_url = "https://api.github.com/repos/victorprouff/blog-hugo/contents/content/en-vracs";
+    let base_url = "https://api.github.com/repos/victorprouffhlj/blog-hugo/contents/content/en-vracs";
     let file_url = format!("{}/{}", base_url, file_name);
 
     let encoded_content = general_purpose::STANDARD.encode(content);
@@ -139,6 +139,12 @@ async fn push_new_article_blog(api_token: &str, user_agent: &str, content: &str,
     Err(format!("Erreur serveur: {}", status).into())
 }
 
+#[derive(Debug, serde::Deserialize)]
+struct EnVracParams {
+    secret: Option<String>
+}
+
+
 #[tokio::main]
 async fn main() {
     println!("START API");
@@ -146,6 +152,7 @@ async fn main() {
     let add_items = warp::post()
         .and(warp::path("en-vrac"))
         .and(warp::path::end())
+        .and(warp::query::<EnVracParams>())  // Ajout du paramètre query
         .and_then(handle_en_vrac);
 
     let healthcheck = warp::path!("healthcheck")
@@ -160,7 +167,15 @@ async fn main() {
         .await;
 }
 
-async fn handle_en_vrac() -> Result<impl warp::Reply, warp::Rejection> {
+async fn handle_en_vrac(arams: EnVracParams) -> Result<impl warp::Reply, warp::Rejection> {
+
+    if arams.secret.is_none() || arams.secret.unwrap() != env::var("SECRET").unwrap() {
+        return Ok(warp::reply::with_status(
+            "Secret incorrect",
+            warp::http::StatusCode::UNAUTHORIZED,
+        ));
+    }
+
     match execute().await {
         Ok(_) => Ok(warp::reply::with_status(
             "Article créé avec succès",
@@ -182,6 +197,10 @@ async fn execute() -> Result<(), Box<dyn std::error::Error>> {
             .expect("La variable d'environnement GITHUB_API_TOKEN n'est pas définie");
         let executor = env::var("EXECUTOR")
             .expect("La variable d'environnement EXECUTOR n'est pas définie");
+
+        let secret = env::var("SECRET")
+            .expect("La variable d'environnement SECRET n'est pas définie");
+
         let project_id = "2332182173";
 
         let last_articles_blog = get_last_articles_blog(&github_api_token, &github_user_agent).await?;
