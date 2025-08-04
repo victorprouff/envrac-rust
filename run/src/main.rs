@@ -66,10 +66,10 @@ async fn get_last_articles_blog(api_token: &str, user_agent: &str) -> Result<Vec
         .send()
         .await?;
 
-    // Vérifier le status de la réponse
-    if response.status().is_success() {
-        println!("Success : {:?}", response.status());
-    }
+    // // Vérifier le status de la réponse
+    // if response.status().is_success() {
+    //     println!("Success : {:?}", response.status());
+    // }
     if response.status().is_client_error() {
         println!("Client Error : {:?}", response.status());
         return Err(format!("Erreur client: {}", response.status()).into());
@@ -89,6 +89,8 @@ async fn get_last_articles_blog(api_token: &str, user_agent: &str) -> Result<Vec
 }
 
 async fn push_new_article_blog(api_token: &str, user_agent: &str, content: &str, commit_message: &str) -> Result<bool, Box<dyn std::error::Error>> {
+    println!("Pushing new article to blog...");
+
     let file_name = format!("{}.md", Local::now().format("%Y-%m-%d-EnVrac"));
     let base_url = "https://api.github.com/repos/victorprouff/blog-hugo/contents/content/en-vracs";
     let file_url = format!("{}/{}", base_url, file_name);
