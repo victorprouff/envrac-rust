@@ -33,8 +33,8 @@ async fn get_todoist_tasks(
         println!("Success : {:?}", response.status());
     }
     if response.status().is_client_error() {
-        println!("Client Error : {:?}", response.status());
-        return Err(format!("Erreur client: {}", response.status()).into());
+        println!("TODOIST - Client Error : {:?}", response.status());
+        return Err(format!("TODOIST - Erreur client: {}", response.status()).into());
     }
 
     // Lire le corps de la réponse
@@ -71,8 +71,8 @@ async fn get_last_articles_blog(api_token: &str, user_agent: &str) -> Result<Vec
     //     println!("Success : {:?}", response.status());
     // }
     if response.status().is_client_error() {
-        println!("Client Error : {:?}", response.status());
-        return Err(format!("Erreur client: {}", response.status()).into());
+        println!("GITHUB - Client Error : {:?}", response.status());
+        return Err(format!("GITHUB - Erreur client: {}", response.status()).into());
     }
 
     // Lire le corps de la réponse
