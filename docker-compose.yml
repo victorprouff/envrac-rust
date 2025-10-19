@@ -12,6 +12,4 @@ services:
       - TODOIST_API_TOKEN=${TODOIST_API_TOKEN}
       - EXECUTOR=${EXECUTOR}
       - SECRET=${SECRET}
-    env_file:
-      - ./run/.env
     restart: unless-stopped
