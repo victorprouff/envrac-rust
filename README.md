@@ -75,6 +75,10 @@ Le serveur démarre sur le port **3030**.
 | `POST`  | `/en-vrac?secret=<SECRET>` | Génère et publie l'article |
 | `GET`   | `/healthcheck` | Vérifie que le serveur est actif      |
 
+## Amélioration / todo :
+- Si le déploiement Github c'est bien passé, cocher toutes les tasks TodoIst récupéré pour faire le "En-Vrac" pour vider les sections pour la prochaine semaine
+- Est-ce qu'on est obligé de passer par une url ? Est-ce qu'on pourrais passer par un script Rust ?
+
 ## Dépendances principales
 
 - [`warp`](https://github.com/seanmonstar/warp) — serveur HTTP
