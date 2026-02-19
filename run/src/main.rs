@@ -17,7 +17,7 @@ async fn get_todoist_tasks(
     project_id: &str,
 ) -> Result<Vec<Task>, Box<dyn std::error::Error>> {
     let url = format!(
-        "https://api.todoist.com/rest/v2/tasks?project_id={}",
+        "https://api.todoist.com/api/v1/tasks?project_id={}",
         project_id
     );
 
@@ -36,8 +36,11 @@ async fn get_todoist_tasks(
         return Err(format!("TODOIST - Erreur {}: {}", status, body).into());
     }
 
-    // Lire le corps de la réponse
-    let mut articles: Vec<Task> = response.json().await?;
+    // Lire le corps de la réponse (API v1 retourne { "results": [...] })
+    #[derive(Deserialize)]
+    struct TodoistResponse { results: Vec<Task> }
+    let body: TodoistResponse = response.json().await?;
+    let mut articles = body.results;
     for article in &mut articles {
         article.post_deserialize();
     }
@@ -165,7 +168,18 @@ async fn main() {
 
 async fn handle_en_vrac(arams: EnVracParams) -> Result<impl warp::Reply, warp::Rejection> {
 
-    if arams.secret.is_none() || arams.secret.unwrap() != env::var("SECRET").unwrap() {
+    let expected_secret = match env::var("SECRET") {
+        Ok(s) => s,
+        Err(_) => {
+            println!("Variable d'environnement SECRET manquante");
+            return Ok(warp::reply::with_status(
+                "Configuration serveur incorrecte",
+                warp::http::StatusCode::INTERNAL_SERVER_ERROR,
+            ));
+        }
+    };
+
+    if arams.secret.as_deref() != Some(expected_secret.as_str()) {
         return Ok(warp::reply::with_status(
             "Secret incorrect",
             warp::http::StatusCode::UNAUTHORIZED,
@@ -177,10 +191,13 @@ async fn handle_en_vrac(arams: EnVracParams) -> Result<impl warp::Reply, warp::R
             "Article créé avec succès",
             warp::http::StatusCode::OK,
         )),
-        Err(_) => Ok(warp::reply::with_status(
-            "Une erreur est survenue",
-            warp::http::StatusCode::INTERNAL_SERVER_ERROR,
-        ))
+        Err(e) => {
+            println!("Erreur dans execute() : {}", e);
+            Ok(warp::reply::with_status(
+                "Une erreur est survenue",
+                warp::http::StatusCode::INTERNAL_SERVER_ERROR,
+            ))
+        }
     }
 }
 
@@ -194,7 +211,7 @@ async fn execute() -> Result<(), Box<dyn std::error::Error>> {
         let executor = env::var("EXECUTOR")
             .expect("La variable d'environnement EXECUTOR n'est pas définie");
 
-        let project_id = "2332182173";
+        let project_id = "6V79vpFpwHpQpRJm";
 
         let last_articles_blog = get_last_articles_blog(&github_api_token, &github_user_agent).await?;
 
