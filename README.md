@@ -72,8 +72,9 @@ Le serveur démarre sur le port **3030**.
 
 | Méthode | Route          | Description                          |
 |---------|----------------|--------------------------------------|
-| `POST`  | `/en-vrac?secret=<SECRET>` | Génère et publie l'article |
-| `GET`   | `/healthcheck` | Vérifie que le serveur est actif      |
+| `POST`  | `/en-vrac?secret=<SECRET>`   | Génère et publie l'article sur GitHub |
+| `GET`   | `/dry-run?secret=<SECRET>`   | Génère l'article et retourne le Markdown dans la réponse (sans publier) |
+| `GET`   | `/healthcheck`               | Vérifie que le serveur est actif      |
 
 ## Amélioration / todo :
 - Si le déploiement Github c'est bien passé, cocher toutes les tasks TodoIst récupéré pour faire le "En-Vrac" pour vider les sections pour la prochaine semaine
