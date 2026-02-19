@@ -42,11 +42,11 @@ impl fmt::Display for Category {
 
 pub fn convert_to_category(section: &str) -> Category {
     match section {
-        "181074705" => Category::Youtube,
-        "179438112" => Category::Articles,
-        "181074629" => Category::Tools,
-        "184011119" => Category::Podcast,
-        "184719314" => Category::Livre,
-        _ => Category::PutAside
+        "6X8mJ9WhpJFPrfmm" => Category::Youtube,   // Vidéos
+        "6X5QxC5v5w5xp7Mm" => Category::Articles,  // Articles
+        "6X8mJ5rj5jH9mp6m" => Category::Tools,     // Tools
+        "6XMH39GP3Rc82GfF" => Category::Podcast,   // Podcasts
+        "6XQ22GHFMvw4gxVF" => Category::Livre,     // Livres
+        _ => Category::PutAside                     // Semaine prochaine, On garde de côté, etc.
     }
 }
