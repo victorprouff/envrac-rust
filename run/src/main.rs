@@ -29,12 +29,11 @@ async fn get_todoist_tasks(
         .await?;
 
     // Vérifier le status de la réponse
-    if response.status().is_success() {
-        println!("Success : {:?}", response.status());
-    }
-    if response.status().is_client_error() {
-        println!("TODOIST - Client Error : {:?}", response.status());
-        return Err(format!("TODOIST - Erreur client: {}", response.status()).into());
+    if !response.status().is_success() {
+        let status = response.status();
+        let body = response.text().await.unwrap_or_default();
+        println!("TODOIST - Erreur {} : {}", status, body);
+        return Err(format!("TODOIST - Erreur {}: {}", status, body).into());
     }
 
     // Lire le corps de la réponse
@@ -70,9 +69,11 @@ async fn get_last_articles_blog(api_token: &str, user_agent: &str) -> Result<Vec
     // if response.status().is_success() {
     //     println!("Success : {:?}", response.status());
     // }
-    if response.status().is_client_error() {
-        println!("GITHUB - Client Error : {:?}", response.status());
-        return Err(format!("GITHUB - Erreur client: {}", response.status()).into());
+    if !response.status().is_success() {
+        let status = response.status();
+        let body = response.text().await.unwrap_or_default();
+        println!("GITHUB (get_last_articles_blog) - Erreur {} : {}", status, body);
+        return Err(format!("GITHUB (get_last_articles_blog) - Erreur {}: {}", status, body).into());
     }
 
     // Lire le corps de la réponse
@@ -128,15 +129,10 @@ async fn push_new_article_blog(api_token: &str, user_agent: &str, content: &str,
         return Ok(true);
     }
 
-    if response.status().is_client_error() {
-        let status = response.status();
-        println!("Erreur détaillée : {}", response.text().await?);
-        return Err(format!("Erreur client: {}", status).into());
-    }
-
     let status = response.status();
-    println!("Erreur détaillée : {}", response.text().await?);
-    Err(format!("Erreur serveur: {}", status).into())
+    let body = response.text().await.unwrap_or_default();
+    println!("GITHUB (push_new_article_blog) - Erreur {} : {}", status, body);
+    Err(format!("GITHUB (push_new_article_blog) - Erreur {}: {}", status, body).into())
 }
 
 #[derive(Debug, serde::Deserialize)]
@@ -181,7 +177,7 @@ async fn handle_en_vrac(arams: EnVracParams) -> Result<impl warp::Reply, warp::R
             "Article créé avec succès",
             warp::http::StatusCode::OK,
         )),
-        Err(e) => Ok(warp::reply::with_status(
+        Err(_) => Ok(warp::reply::with_status(
             "Une erreur est survenue",
             warp::http::StatusCode::INTERNAL_SERVER_ERROR,
         ))
