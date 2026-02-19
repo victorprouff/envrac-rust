@@ -22,6 +22,11 @@ This repo contains two independent Cargo crates:
   - `run/src/models/category.rs` — `Category` enum; Todoist section IDs are hardcoded and mapped to categories
   - `run/src/models/github_object.rs` — `GithubRequest`, `Author`, `Committer` structs for GitHub API
 
+## Points d'attention API
+
+- **Todoist API v1** : l'URL est `https://api.todoist.com/api/v1/tasks` et la réponse est enveloppée `{ "results": [...] }` — pas un tableau direct comme en v2.
+- Le `project_id` Todoist est un identifiant alphanumérique (ex: `"6V79vpFpwHpQpRJm"`), pas numérique.
+
 ## Commands
 
 All commands should be run from the `run/` directory unless otherwise noted.
