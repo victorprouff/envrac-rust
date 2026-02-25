@@ -76,6 +76,13 @@ Le serveur démarre sur le port **3030**.
 | `GET`   | `/dry-run?secret=<SECRET>`   | Génère l'article et retourne le Markdown dans la réponse (sans publier) |
 | `GET`   | `/healthcheck`               | Vérifie que le serveur est actif      |
 
+## Test
+```bash
+curl -X POST "http://localhost:3030/en-vrac?secret=<SECRET>"
+curl -X POST "http://localhost:3030/dry-run?secret=<SECRET>"
+curl -X GET "http://localhost:3030/healthcheck?secret=<SECRET>"
+```
+
 ## Amélioration / todo :
 - Si le déploiement Github c'est bien passé, cocher toutes les tasks TodoIst récupéré pour faire le "En-Vrac" pour vider les sections pour la prochaine semaine
 - Est-ce qu'on est obligé de passer par une url ? Est-ce qu'on pourrais passer par un script Rust ?
