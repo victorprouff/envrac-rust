@@ -187,11 +187,11 @@ async fn main() {
 
         // Pour tester le contenu de l'article sans le publier sur le blog
         // Execute `curl "http://localhost:3030/dry-run?secret=YOUR_SECRET"` pour voir le résultat dans le terminal
-    // let dry_run = warp::get()
-    //     .and(warp::path("dry-run"))
-    //     .and(warp::path::end())
-    //     .and(warp::query::<EnVracParams>())
-    //     .and_then(handle_dry_run);
+    let dry_run = warp::get()
+        .and(warp::path("dry-run"))
+        .and(warp::path::end())
+        .and(warp::query::<EnVracParams>())
+        .and_then(handle_dry_run);
 
     let healthcheck = warp::path!("healthcheck")
         .map(|| "ok");
