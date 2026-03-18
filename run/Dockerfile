@@ -14,6 +14,4 @@ ENV EXECUTOR=$EXECUTOR
 
 RUN cargo build --release
 
-EXPOSE 3030
-
-CMD ["./target/release/run"]
+CMD ["sleep", "infinity"]

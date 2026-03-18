@@ -1,10 +1,10 @@
 # envrac-rust
 
-API HTTP qui génère et publie automatiquement les articles **"En Vrac"** du blog Hugo de Victor Prouff, à partir des tâches Todoist.
+CLI qui génère et publie automatiquement les articles **"En Vrac"** du blog Hugo de Victor Prouff, à partir des tâches Todoist.
 
 ## Fonctionnement
 
-Quand l'endpoint `POST /en-vrac` est appelé (avec le bon secret), l'API :
+Quand la commande `publish` est lancée, l'outil :
 
 1. Récupère les derniers articles "En Vrac" publiés depuis le dépôt GitHub du blog
 2. Récupère les tâches du projet Todoist dédié
@@ -18,7 +18,7 @@ Quand l'endpoint `POST /en-vrac` est appelé (avec le bon secret), l'API :
 envrac-rust/
 ├── run/
 │   ├── src/
-│   │   ├── main.rs              # Serveur warp, routes, logique principale
+│   │   ├── main.rs              # CLI (clap), logique principale
 │   │   ├── lib.rs               # Exports publics
 │   │   └── models/
 │   │       ├── mod.rs
@@ -57,39 +57,38 @@ TODOIST_API_TOKEN=<token Todoist>
 GITHUB_API_TOKEN=<token GitHub>
 GITHUB_USER_AGENT=<votre username GitHub>
 EXECUTOR=<nom de la machine>
-SECRET=<secret pour protéger l'endpoint>
 ```
 
-## Lancer en local
+## Commandes
 
 ```bash
-cd run && set -a && source .env && set +a && cargo run
+# Génère et publie l'article sur le blog
+make publish
+
+# Génère l'article et l'affiche dans le terminal (sans publier)
+make dry-run
+
+# Build release
+make build
+
+# Build l'image Docker
+make docker-build
 ```
 
-Le serveur démarre sur le port **3030**.
+Ou directement :
 
-## Endpoints
-
-| Méthode | Route          | Description                          |
-|---------|----------------|--------------------------------------|
-| `POST`  | `/en-vrac?secret=<SECRET>`   | Génère et publie l'article sur GitHub |
-| `GET`   | `/dry-run?secret=<SECRET>`   | Génère l'article et retourne le Markdown dans la réponse (sans publier) |
-| `GET`   | `/healthcheck`               | Vérifie que le serveur est actif      |
-
-## Test
 ```bash
-curl -X POST "http://localhost:3030/en-vrac?secret=<SECRET>"
-curl -X POST "http://localhost:3030/dry-run?secret=<SECRET>"
-curl -X GET "http://localhost:3030/healthcheck?secret=<SECRET>"
+cd run && set -a && source .env && set +a && cargo run -- publish
+cd run && set -a && source .env && set +a && cargo run -- dry-run
 ```
 
-## Amélioration / todo :
-- Si le déploiement Github c'est bien passé, cocher toutes les tasks TodoIst récupéré pour faire le "En-Vrac" pour vider les sections pour la prochaine semaine
-- Est-ce qu'on est obligé de passer par une url ? Est-ce qu'on pourrais passer par un script Rust ?
+## Déploiement via CRON (Dokploy)
+
+Le conteneur exécute `run publish` au démarrage. Pour un CRON hebdomadaire, configurer Dokploy pour lancer le conteneur selon le planning souhaité.
 
 ## Dépendances principales
 
-- [`warp`](https://github.com/seanmonstar/warp) — serveur HTTP
+- [`clap`](https://github.com/clap-rs/clap) — CLI
 - [`reqwest`](https://github.com/seanmonstar/reqwest) — client HTTP (Todoist, GitHub)
 - [`serde`](https://serde.rs/) — sérialisation/désérialisation JSON
 - [`chrono`](https://github.com/chronotope/chrono) — formatage des dates

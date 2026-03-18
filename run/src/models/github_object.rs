@@ -7,7 +7,9 @@ pub struct GithubRequest {
     pub committer: Committer,
     pub author: Author,
     pub content: String,
-    pub branch: String
+    pub branch: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub sha: Option<String>,
 }
 
 #[derive(Debug, Serialize)]

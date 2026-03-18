@@ -4,12 +4,9 @@ services:
       context: ./run
       dockerfile: Dockerfile
     container_name: envrac-rust-app
-    ports:
-      - "3030:8080"
+    restart: unless-stopped
     environment:
       - GITHUB_API_TOKEN=${GITHUB_API_TOKEN}
       - GITHUB_USER_AGENT=${GITHUB_USER_AGENT}
       - TODOIST_API_TOKEN=${TODOIST_API_TOKEN}
       - EXECUTOR=${EXECUTOR}
-      - SECRET=${SECRET}
-    restart: unless-stopped
