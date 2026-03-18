@@ -84,7 +84,12 @@ cd run && set -a && source .env && set +a && cargo run -- dry-run
 
 ## Déploiement via CRON (Dokploy)
 
-Le conteneur exécute `run publish` au démarrage. Pour un CRON hebdomadaire, configurer Dokploy pour lancer le conteneur selon le planning souhaité.
+Le conteneur tourne en permanence (`sleep infinity` + `restart: unless-stopped`). Dokploy utilise `docker exec` pour déclencher la commande selon le planning.
+
+Commande à configurer dans le schedule Dokploy :
+```
+/app/target/release/run publish
+```
 
 ## Dépendances principales
 
