@@ -117,6 +117,33 @@ async fn get_last_articles_blog(api_token: &str, user_agent: &str) -> Result<Vec
     Ok(all_articles)
 }
 
+async fn get_file_sha(api_token: &str, user_agent: &str, file_url: &str) -> Result<Option<String>, Box<dyn std::error::Error>> {
+    #[derive(Deserialize)]
+    struct FileInfo { sha: String }
+
+    let client = reqwest::Client::new();
+    let response = client
+        .get(file_url)
+        .header("Accept", "application/vnd.github+json")
+        .header("Authorization", format!("Bearer {}", api_token))
+        .header(USER_AGENT, user_agent)
+        .header("X-GitHub-Api-Version", "2022-11-28")
+        .send()
+        .await?;
+
+    if response.status() == 404 {
+        return Ok(None);
+    }
+    if !response.status().is_success() {
+        let status = response.status();
+        let body = response.text().await.unwrap_or_default();
+        return Err(format!("GITHUB (get_file_sha) - Erreur {}: {}", status, body).into());
+    }
+
+    let info: FileInfo = response.json().await?;
+    Ok(Some(info.sha))
+}
+
 async fn push_new_article_blog(api_token: &str, user_agent: &str, content: &str, commit_message: &str) -> Result<bool, Box<dyn std::error::Error>> {
     println!("Pushing new article to blog...");
 
@@ -125,6 +152,8 @@ async fn push_new_article_blog(api_token: &str, user_agent: &str, content: &str,
     let file_name = format!("{}.md", now.format("%Y-%m-%d-envrac"));
     let base_url = "https://api.github.com/repos/victorprouff/blog-hugo/contents/content/en-vracs";
     let file_url = format!("{}/{}/{}", base_url, year, file_name);
+
+    let sha = get_file_sha(api_token, user_agent, &file_url).await?;
 
     let encoded_content = general_purpose::STANDARD.encode(content);
 
@@ -140,6 +169,7 @@ async fn push_new_article_blog(api_token: &str, user_agent: &str, content: &str,
         },
         content: encoded_content,
         branch: "main".to_string(),
+        sha,
     };
 
     let client = reqwest::Client::new();
