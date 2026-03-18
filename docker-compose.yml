@@ -4,6 +4,7 @@ services:
       context: ./run
       dockerfile: Dockerfile
     container_name: envrac-rust-app
+    restart: unless-stopped
     environment:
       - GITHUB_API_TOKEN=${GITHUB_API_TOKEN}
       - GITHUB_USER_AGENT=${GITHUB_USER_AGENT}
