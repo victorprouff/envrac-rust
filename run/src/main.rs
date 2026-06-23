@@ -22,27 +22,52 @@ async fn get_todoist_tasks(
     );
 
     let client = reqwest::Client::new();
-    let response = client
-        .get(url)
-        .header("Authorization", format!("Bearer {}", api_token))
-        .send()
-        .await?;
+    let max_retries = 3;
+    let mut last_error = String::new();
 
-    if !response.status().is_success() {
+    for attempt in 0..=max_retries {
+        if attempt > 0 {
+            let delay = std::time::Duration::from_secs(2u64.pow(attempt as u32));
+            println!("TODOIST - Tentative {}/{} après {}s d'attente...", attempt + 1, max_retries + 1, delay.as_secs());
+            tokio::time::sleep(delay).await;
+        }
+
+        let response = match client
+            .get(&url)
+            .header("Authorization", format!("Bearer {}", api_token))
+            .send()
+            .await
+        {
+            Ok(r) => r,
+            Err(e) => {
+                last_error = format!("TODOIST - Erreur réseau: {}", e);
+                println!("{}", last_error);
+                continue;
+            }
+        };
+
+        if response.status().is_success() {
+            #[derive(Deserialize)]
+            struct TodoistResponse { results: Vec<Task> }
+            let body: TodoistResponse = response.json().await?;
+            let mut articles = body.results;
+            for article in &mut articles {
+                article.post_deserialize();
+            }
+            return Ok(articles);
+        }
+
         let status = response.status();
         let body = response.text().await.unwrap_or_default();
-        println!("TODOIST - Erreur {} : {}", status, body);
-        return Err(format!("TODOIST - Erreur {}: {}", status, body).into());
+        last_error = format!("TODOIST - Erreur {}: {}", status, body);
+        println!("{}", last_error);
+
+        if !status.is_server_error() {
+            return Err(last_error.into());
+        }
     }
 
-    #[derive(Deserialize)]
-    struct TodoistResponse { results: Vec<Task> }
-    let body: TodoistResponse = response.json().await?;
-    let mut articles = body.results;
-    for article in &mut articles {
-        article.post_deserialize();
-    }
-    Ok(articles)
+    Err(last_error.into())
 }
 
 #[derive(Deserialize, Debug)]
