@@ -70,6 +70,59 @@ async fn get_todoist_tasks(
     Err(last_error.into())
 }
 
+async fn close_todoist_tasks(
+    api_token: &str,
+    task_ids: &[String],
+) -> Result<(), Box<dyn std::error::Error>> {
+    if task_ids.is_empty() {
+        println!("TODOIST - Aucune tâche à clôturer.");
+        return Ok(());
+    }
+
+    let client = reqwest::Client::new();
+    let mut errors: Vec<String> = Vec::new();
+
+    for task_id in task_ids {
+        let url = format!("https://api.todoist.com/api/v1/tasks/{}/close", task_id);
+
+        let response = match client
+            .post(&url)
+            .header("Authorization", format!("Bearer {}", api_token))
+            .send()
+            .await
+        {
+            Ok(r) => r,
+            Err(e) => {
+                let msg = format!("TODOIST (close {}) - Erreur réseau: {}", task_id, e);
+                println!("{}", msg);
+                errors.push(msg);
+                continue;
+            }
+        };
+
+        if response.status().is_success() {
+            println!("TODOIST - Tâche {} clôturée.", task_id);
+        } else {
+            let status = response.status();
+            let body = response.text().await.unwrap_or_default();
+            let msg = format!("TODOIST (close {}) - Erreur {}: {}", task_id, status, body);
+            println!("{}", msg);
+            errors.push(msg);
+        }
+    }
+
+    if errors.is_empty() {
+        Ok(())
+    } else {
+        Err(format!(
+            "TODOIST - {} tâche(s) n'ont pas pu être clôturée(s): {}",
+            errors.len(),
+            errors.join(" | ")
+        )
+        .into())
+    }
+}
+
 #[derive(Deserialize, Debug)]
 struct Content {
     name: String,
@@ -250,7 +303,7 @@ async fn main() {
 }
 
 async fn cmd_dry_run() -> Result<(), Box<dyn std::error::Error>> {
-    let article = generate_article_content().await?;
+    let (article, _exported_task_ids) = generate_article_content().await?;
     println!("{}", article);
     Ok(())
 }
@@ -263,15 +316,20 @@ async fn cmd_publish() -> Result<(), Box<dyn std::error::Error>> {
     let executor = env::var("EXECUTOR")
         .expect("La variable d'environnement EXECUTOR n'est pas définie");
 
-    let article = generate_article_content().await?;
+    let todoist_api_token = env::var("TODOIST_API_TOKEN")
+        .expect("La variable d'environnement TODOIST_API_TOKEN n'est pas définie");
+
+    let (article, exported_task_ids) = generate_article_content().await?;
 
     let commit_message = format!("[EnVrac] - Publish Auto (envrac-rust - {}) {}", executor, Local::now().format("%Y-%m-%d-envrac.md"));
     push_new_article_blog(&github_api_token, &github_user_agent, &article, &commit_message).await?;
 
+    close_todoist_tasks(&todoist_api_token, &exported_task_ids).await?;
+
     Ok(())
 }
 
-async fn generate_article_content() -> Result<String, Box<dyn std::error::Error>> {
+async fn generate_article_content() -> Result<(String, Vec<String>), Box<dyn std::error::Error>> {
     let todoist_api_token = env::var("TODOIST_API_TOKEN")
         .expect("La variable d'environnement TODOIST_API_TOKEN n'est pas définie");
     let github_api_token = env::var("GITHUB_API_TOKEN")
@@ -287,10 +345,16 @@ async fn generate_article_content() -> Result<String, Box<dyn std::error::Error>
     let filtered_articles: Vec<Task> = exclude_put_aside_category_tasks(tasks);
     let grouped_tasks = group_by_category(filtered_articles);
 
+    let exported_task_ids: Vec<String> = grouped_tasks
+        .values()
+        .flatten()
+        .map(|task| task.id.clone())
+        .collect();
+
     let head_of_article = create_head_of_article(last_articles_blog);
     let body_of_article = create_body_of_article(grouped_tasks);
 
-    Ok(format!("{}\n{}", head_of_article, body_of_article))
+    Ok((format!("{}\n{}", head_of_article, body_of_article), exported_task_ids))
 }
 
 fn create_body_of_article(grouped_tasks: HashMap<Category, Vec<Task>>) -> String {
